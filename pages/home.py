@@ -1,8 +1,19 @@
 import dash
 import dash_mantine_components as dmc
-from dash import html, callback, Output, Input, no_update, State, ctx
+from dash import html, callback, Output, Input, no_update, State, ctx, dcc
+from scipy.optimize import fsolve
 
-from components.charts import t_rh_pmv, t_hr_pmv, t_ra_PMV, chart_selector
+
+
+from components.charts import (
+   
+    t_ra_pmv,
+    t_rh_pmv,
+    t_hr_pmv,
+    chart_selector,
+    #SET_outputs_chart,
+    #pmot_ot_adaptive_ashrae,
+)
 from components.dropdowns import (
     model_selection,
 )
@@ -21,6 +32,9 @@ from utils.my_config_file import (
     ChartsInfo,
     MyStores,
 )
+
+from urllib.parse import parse_qs, urlencode
+
 
 dash.register_page(__name__, path=URLS.HOME.value)
 
@@ -62,6 +76,7 @@ layout = dmc.Stack(
                                 id=ElementsIDs.CHART_CONTAINER.value,
                             ),
                             dmc.Text(id=ElementsIDs.note_model.value),
+                            dcc.Location(id=ElementsIDs.URL.value, refresh=False),
                         ],
                     ),
                     span={"base": 12, "sm": Dimensions.right_container_width.value},
@@ -75,6 +90,7 @@ layout = dmc.Stack(
 
 @callback(
     Output(MyStores.input_data.value, "data"),
+    Output(ElementsIDs.URL.value, "search", allow_duplicate=True),
     Input(ElementsIDs.inputs_form.value, "n_clicks"),
     Input(ElementsIDs.inputs_form.value, "children"),
     Input(ElementsIDs.clo_input.value, "value"),
@@ -83,7 +99,9 @@ layout = dmc.Stack(
     Input(ElementsIDs.chart_selected.value, "value"),
     Input(ElementsIDs.functionality_selection.value, "value"),
     State(ElementsIDs.MODEL_SELECTION.value, "value"),
+    prevent_initial_call=True,
 )
+# save the inputs in the store, and update the URL
 def update_store_inputs(
     form_clicks: int,
     form_content: dict,
@@ -94,6 +112,8 @@ def update_store_inputs(
     functionality_selection: str,
     selected_model: str,
 ):
+    if form_clicks is None:
+        return no_update, no_update
     units = UnitSystem.IP.value if units_selection else UnitSystem.SI.value
     inputs = get_inputs(selected_model, form_content, units)
 
@@ -109,20 +129,52 @@ def update_store_inputs(
     inputs[ElementsIDs.chart_selected.value] = chart_selected
     inputs[ElementsIDs.functionality_selection.value] = functionality_selection
 
-    return inputs
+    # encode the inputs to be used in the URL
+    url_search = f"?{urlencode(inputs)}"
+    # print(f"url_params: {url_data}")
+
+    return inputs, url_search
 
 
 @callback(
+    Output(ElementsIDs.MODEL_SELECTION.value, "value"),
     Output(ElementsIDs.INPUT_SECTION.value, "children"),
-    Input(ElementsIDs.MODEL_SELECTION.value, "value"),
-    Input(ElementsIDs.UNIT_TOGGLE.value, "checked"),
+    Input(ElementsIDs.URL.value, "search"),
+    State(MyStores.input_data.value, "data"),
+    State(ElementsIDs.UNIT_TOGGLE.value, "checked"),
 )
-def update_inputs(selected_model, units_selection):
-    # todo here I should first check if some inputs are already stored in the store
-    if selected_model is None:
-        return no_update
+def update_model_and_inputs(url_search, stored_data, units_selection):
+    # Parse URL parameters
+    url_params = parse_qs(url_search.lstrip("?"))
+    url_params = {k: v[0] if len(v) == 1 else v for k, v in url_params.items()}
+
+    # If URL parameters exist, use them; otherwise, fall back to stored data
+    params = url_params if url_params else (stored_data or {})
+
+    # Get the selected model from params, or use the default if not found
+    selected_model = params.get(
+        ElementsIDs.MODEL_SELECTION.value, Models.PMV_ashrae.name
+    )
+
     units = UnitSystem.IP.value if units_selection else UnitSystem.SI.value
-    return input_environmental_personal(selected_model, units)
+
+    # Convert numeric strings to float
+    for key, value in params.items():
+        try:
+            params[key] = float(value)
+        except (ValueError, TypeError):
+            pass
+
+    # Ensure that the unit toggle and model selection are always respected
+    params[ElementsIDs.UNIT_TOGGLE.value] = units
+    params[ElementsIDs.MODEL_SELECTION.value] = selected_model
+
+    # Update the input section
+    input_section = input_environmental_personal(
+        selected_model, units, url_params=params
+    )
+
+    return selected_model, input_section
 
 
 @callback(
@@ -163,6 +215,7 @@ def update_chart(
     chart_selected = inputs[ElementsIDs.chart_selected.value]
 
     image = html.Div(
+        
         [
             dmc.Title("Unfortunately this chart has not been implemented yet", order=4),
             dmc.Image(
@@ -176,16 +229,34 @@ def update_chart(
             image = t_rh_pmv(inputs=inputs, model="iso")
         elif selected_model == Models.PMV_ashrae.name:
             image = t_rh_pmv(inputs=inputs, model="ashrae")
+   
+
+    if chart_selected == Charts.set_outputs.value.name:
+        if selected_model == Models.PMV_EN.name:
+            image = SET_outputs_chart(inputs=inputs, model="iso")
+        elif selected_model == Models.PMV_ashrae.name:
+            image = SET_outputs_chart(inputs=inputs, model="ashrae")
+
+    if chart_selected == Charts.pmot_ot.value.name:
+        if selected_model == Models.Adaptive_ASHRAE.name:
+            image = pmot_ot_adaptive_ashrae(inputs=inputs, model="ashrae")
+
+    
     if chart_selected == Charts.psychrometric.value.name:
+        print("psychrometric")
         if selected_model == Models.PMV_EN.name:
             image = t_hr_pmv(inputs=inputs, model="iso")
         elif selected_model == Models.PMV_ashrae.name:
             image = t_hr_pmv(inputs=inputs, model="ashrae")
+
     if chart_selected == Charts.psychrometric_operative.value.name:
+        print("psychrometric_operative")
         if selected_model == Models.PMV_EN.name:
-            image = t_ra_PMV(inputs=inputs, model="iso")
+            image = t_ra_pmv(inputs=inputs, model="iso", sign="en")
         elif selected_model == Models.PMV_ashrae.name:
-            image = t_ra_PMV(inputs=inputs, model="ashrae")
+            image = t_ra_pmv(inputs=inputs, model="ashrae", sign="ashrae")
+
+   
 
     note = ""
     chart: ChartsInfo
@@ -211,4 +282,13 @@ def update_chart(
     Input(MyStores.input_data.value, "data"),
 )
 def update_outputs(inputs: dict):
+   
+    # 检查 inputs 是否为 None，防止空数据导致错误
+    if inputs is None:
+        print("Inputs are None, skipping the update.")
+        return
+    
     return display_results(inputs)
+    
+    # 确保其他逻辑正常进行
+
