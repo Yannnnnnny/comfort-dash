@@ -4,8 +4,7 @@ from copy import deepcopy
 import matplotlib.pyplot as plt
 
 import dash_mantine_components as dmc
-import matplotlib.pyplot as plt
-import numpy as np
+
 import pandas as pd
 from pythermalcomfort.models import pmv, set_tmp, two_nodes, adaptive_ashrae, pmv_ppd
 from pythermalcomfort.utilities import v_relative, clo_dynamic 
@@ -17,11 +16,14 @@ from scipy import optimize
 from components.drop_down_inline import generate_dropdown_inline
 from utils.my_config_file import ElementsIDs, Models
 from utils.website_text import TextHome
-#import matplotlib
 
-#matplotlib.use("Agg")
-import plotly.graph_objects as go
+#import plotly.graph_objects as go
 
+import matplotlib.pyplot as plt
+import numpy as np
+import matplotlib
+matplotlib.use('TkAgg')  # or 'Qt5Agg', depending on your environment
+import tkinter as tk
 
 def chart_selector(selected_model: str):
     list_charts = deepcopy(Models[selected_model].value.charts)
@@ -488,7 +490,7 @@ def pmot_ot_adaptive_ashrae(inputs: dict = None, model: str = "ashrae"):
 
 
 
-def t_ra_pmv(inputs: dict = None, model: str = "iso", sign: str = None):
+def t_ra_pmv(inputs: dict = None, model: str = "iso"):
     results = []
     pmv_limits = [-0.5, 0.5]  # PMV upper and lower limits
  
@@ -603,22 +605,15 @@ def t_ra_pmv(inputs: dict = None, model: str = "iso", sign: str = None):
 
             # store the outcomes into result lists
             
-            if sign == "en":
-                results.append({
+            
+            results.append({
                     
                     "pmv": pmv_value, 
                     "ppd": ppd_value,
                     "category": "",
-                })
+            })
 
-            else:
-                results.append({
-                    
-                    "pmv": pmv_value, 
-                    "ppd": ppd_value,
-                    "sensation": "",
-                    "SET":"",
-                })
+            
 
   
             # calculation part end    
@@ -628,13 +623,23 @@ def t_ra_pmv(inputs: dict = None, model: str = "iso", sign: str = None):
     p_tdb = current_tdb
     p_rh = current_rh
 
+    air_speed = vr_d
+    met = met_d
+    clo = clo_d
+
     fig, ax = plt.subplots(figsize=(6, 4))
 
     print("Create psychrometric chart")
 
-    # Plot category III area
-    category_3_up = np.linspace(20.5, 27.1, 100)
-    category_3_low = np.array([33.3, 24.2])
+    # Define adjustments
+    air_speed_adjustment = 0.1  # Increment/decrement for air speed
+    met_adjustment = 0.1  # Increment/decrement for metabolic rate
+    clo_adjustment = 0.3  # Increment/decrement for clothing value
+
+    # Category III
+    offset = (air_speed + air_speed_adjustment) * 1 - (met + met_adjustment) * 2 - (clo + clo_adjustment) * 2
+    category_3_up = np.linspace(20.5 + offset, 27.1 + offset, 100)
+    category_3_low = np.array([33.3 + offset, 24.2 + offset])
     category_3_x = np.concatenate((category_3_up, category_3_low))
     category_3_y = np.concatenate(
         (
@@ -643,10 +648,11 @@ def t_ra_pmv(inputs: dict = None, model: str = "iso", sign: str = None):
         )
     )
     ax.fill_between(category_3_x, category_3_y, color="lightgreen", label="Category III")
-
-    # Plot category II area
-    category_2_up = np.linspace(21.4, 26.2, 100)
-    category_2_low = np.array([32, 25.5])
+    
+    # Category II
+    offset = (air_speed - air_speed_adjustment) * 1 - (met - met_adjustment) * 2 - (clo - clo_adjustment) * 2
+    category_2_up = np.linspace(21.4 + offset, 26.2 + offset, 100)
+    category_2_low = np.array([32 + offset, 25.5 + offset])
     category_2_x = np.concatenate((category_2_up, category_2_low))
     category_2_y = np.concatenate(
         (
@@ -655,10 +661,11 @@ def t_ra_pmv(inputs: dict = None, model: str = "iso", sign: str = None):
         )
     )
     ax.fill_between(category_2_x, category_2_y, color="green", label="Category II")
-
-    # Plot category I area
-    category_1_up = np.linspace(22.7, 24.7, 100)
-    category_1_low = np.array([30, 27.4])
+    
+    # Category I
+    offset = (air_speed + air_speed_adjustment) * 1 - (met + met_adjustment) * 2 - (clo + clo_adjustment) * 2
+    category_1_up = np.linspace(22.7 + offset, 24.7 + offset, 100)
+    category_1_low = np.array([30 + offset, 27.4 + offset])
     category_1_x = np.concatenate((category_1_up, category_1_low))
     category_1_y = np.concatenate(
         (
@@ -668,17 +675,19 @@ def t_ra_pmv(inputs: dict = None, model: str = "iso", sign: str = None):
     )
     ax.fill_between(category_1_x, category_1_y, color="darkgreen", label="Category I")
 
-    # Plot red point and circle
+    # 更新红点位置
     red_point = [p_tdb, psy_ta_rh(p_tdb, p_rh, p_atm=101325)["hr"] * 1000]
     ax.scatter(red_point[0], red_point[1], color="red", label="Current Condition")
-    
+
+    # 绘制红点周围的虚线圆圈
     theta = np.linspace(0, 2 * np.pi, 100)
     circle_x = red_point[0] + 0.6 * np.cos(theta)
     circle_y = red_point[1] + 1.2 * np.sin(theta)
     ax.plot(circle_x, circle_y, color="red", linestyle="--")
 
     print("Plot humidity ratio lines")
-    # Plot humidity ratio lines
+    
+    # 绘制湿度比曲线
     rh_list = np.arange(0, 101, 10)
     tdb = np.linspace(10, 36, 500)
     for rh in rh_list:
@@ -687,26 +696,28 @@ def t_ra_pmv(inputs: dict = None, model: str = "iso", sign: str = None):
         )
         ax.plot(tdb, hr_list, color="black", linewidth=1, label=f"{rh}% RH")
 
-    # Set labels and title
+    # 设置坐标轴和标题
     ax.set_xlabel("Dry-bulb Temperature (°C)")
     ax.set_ylabel("Humidity Ratio (g_w/kg_da)")
     ax.set_title("Psychrometric (air temperature)")
     ax.legend()
     ax.grid(True)
-
     plt.tight_layout()
 
-    # Save the image as base64 encoding
+    # 保存为 base64
     my_stringIObytes = io.BytesIO()
     plt.savefig(my_stringIObytes, format="png", dpi=300, bbox_inches="tight")
     my_stringIObytes.seek(0)
     my_base64_jpgData = base64.b64encode(my_stringIObytes.read()).decode()
-
-    # Close the currently drawn image to prevent memory leaks
     plt.close(fig)
-
+    
     return dmc.Image(
         src=f"data:image/png;base64, {my_base64_jpgData}",
         alt="Psychrometric chart",
         py=0,
     )
+
+
+
+#1. graph moving for each part
+#

@@ -1,0 +1,187 @@
+home.py:{ if chart_selected == Charts.fans_heat.value.name:
+        print("fans_heat")
+        if selected_model == Models.Fans_Heat.name:
+            image = t_fans_heat(inputs=inputs, model="iso")}
+
+
+
+charts.py:{def t_fans_heat(inputs: dict = None, model: str = "iso"):
+    print("charts.py: t_fans_heat")
+    results = []
+    
+ 
+    met_d = float(inputs[ElementsIDs.met_input.value])
+
+    clo_d = clo_dynamic(
+        clo = float(inputs[ElementsIDs.clo_input.value]), met = met_d
+    )
+
+    vr_d = v_relative(
+        v = float(inputs[ElementsIDs.v_input.value]), met = met_d
+    )
+
+    current_tr = float(inputs[ElementsIDs.t_r_input.value])
+    current_tdb = float(inputs[ElementsIDs.t_db_input.value])
+    current_rh = float(inputs[ElementsIDs.rh_input.value])
+    
+    
+
+    psy_data = psy_ta_rh(tdb=current_tdb, rh=current_rh, p_atm=101325)["hr"] * 1000  
+    psy_data_rh = psy_data
+    print(f"current_tdb: {current_tdb}")
+    print(f"current_tr: {current_tr}")
+    print(f"vr_d: {vr_d}")
+    print(f"current_rh: {current_rh}")
+    print(f"met_d: {met_d}")
+    print(f"clo_d: {clo_d}")
+
+    #计算有问题
+    # Traverse the upper and lower limits of PMV and calculate different rh
+   
+    for rh in np.arange(10, 110, 10):  # rh increases by 10% each time
+            
+            # Use optimize.brentq to calculate the temperature at a given rh
+        def function(x):
+            print(f"Inputs to pmv_ppd -> tdb: {current_tdb}, tr: {current_tr}, vr: {vr_d}, rh: {current_rh}, met: {met_d}, clo: {clo_d}")
+
+            # Creating a dictionary to store return values
+            intermediate_values = {
+                "tdb": current_tdb,
+                "tr": current_tr,
+                "vr": vr_d,
+                "rh": current_rh,
+                "met": met_d,
+                "clo": clo_d,
+                "valid": True  # Initially assume all values are valid.
+            }
+            # Convert vr and clo into scalar values
+            intermediate_values["vr"] = intermediate_values["vr"].item() if hasattr(intermediate_values["vr"], 'item') else intermediate_values["vr"]
+            intermediate_values["clo"] = intermediate_values["clo"].item() if hasattr(intermediate_values["clo"], 'item') else intermediate_values["clo"]
+            # check out whether the input is in the effective area.
+            if not (10 < intermediate_values["tdb"] < 40):
+                print(f"tdb {intermediate_values['tdb']} is out of range for ASHRAE limits.")
+                intermediate_values["tdb"] = 11  
+                intermediate_values["valid"] = True
+                
+            if not (10 < intermediate_values["tr"] < 40):
+                print(f"tr {intermediate_values['tr']} is out of range for ASHRAE limits.")
+                intermediate_values["tr"] = 11  
+                intermediate_values["valid"] = True
+            if not (0 < intermediate_values["vr"] < 2):
+                print(f"vr {intermediate_values['vr']} is out of range for ASHRAE limits.")
+                intermediate_values["vr"] = 0.1  
+                intermediate_values["valid"] = True
+            if not (1 < intermediate_values["met"] < 4):
+                print(f"met {intermediate_values['met']} is out of range for ASHRAE limits.")
+                intermediate_values["met"] = 1.1  
+                intermediate_values["valid"] = True
+            if not (0 < intermediate_values["clo"] < 1.5):
+                print(f"clo {intermediate_values['clo']} is out of range for ASHRAE limits.")
+                intermediate_values["clo"] = 0.1  
+                intermediate_values["valid"] = True
+
+            print("5 if ok")
+            print(f"Inputs to phs -> {intermediate_values}")
+        
+                        
+            result = use_fans_heatwaves(
+                tdb=intermediate_values["tdb"],
+                tr=intermediate_values["tr"],
+                vr=intermediate_values["vr"],
+                rh=intermediate_values["rh"],
+                met=intermediate_values["met"],
+                clo=intermediate_values["clo"]
+            )
+            
+            
+           
+            e_skin_value = result.get("e_skin", None)
+            e_rsw_value = result.get("e_rsw", None)
+            e_diff_value = result.get("e_diff", None)
+            e_max_value = result.get("e_max", None)
+            q_sensible_value = result.get("q_sensible", None)
+            q_skin_value = result.get("q_skin", None)
+            q_res_value = result.get("q_res", None)
+            t_core_value = result.get("t_core", None)
+            q_core_value = result.get("q_core", None)
+            heat_strain_value = result.get("heat_strain", None)
+            
+            # Print all values in one statement
+            print(f"tdb: {intermediate_values['tdb']}, e_skin_value: {e_skin_value}, e_rsw_value: {e_rsw_value}, e_diff_value: {e_diff_value}, e_max_value: {e_max_value}, q_sensible_value: {q_sensible_value}, q_skin_value: {q_skin_value}, q_res_value: {q_res_value}, t_core_value: {t_core_value}, q_core_value: {q_core_value}, heat_strain_value:{heat_strain_value}")
+           
+          
+            return e_skin_value, q_skin_value, heat_strain_value
+        
+        e_skin_value, q_skin_value, heat_strain_value = function(x=25)
+        
+        
+        # store the outcomes into result lists
+        
+        results.append({
+                
+            "The green areas show the temperature and relative humidity conditions in which the use of fans provides more cooling to the human body of a standard subject than still air. In the dark green region, while the use of fans is still beneficial, people are most likely suffering from heat strain. The red area demarcates the region in which fans should not be used."
+        })
+}
+
+
+show_results.py:{elif selected_model == Models.Fans_Heat.name:
+        columns = 1
+        fans_heat = use_fans_heatwaves(
+                tdb=intermediate_values["tdb"],
+                tr=intermediate_values["tr"],
+                vr=intermediate_values["vr"],
+                rh=intermediate_values["rh"],
+                met=intermediate_values["met"],
+                clo=intermediate_values["clo"]
+        )
+        results.append(dmc.Center(dmc.Text(f"e_skin: {fans_heat['e_skin']}")))
+        results.append(dmc.Center(dmc.Text(f"q_skin: {fans_heat['q_skin']}")))
+        results.append(dmc.Center(dmc.Text(f"heat_strain: {fans_heat['heat_strain']}")))    
+}
+
+my_config_file.py:{
+   Fans_Heat: ModelsInfo = ModelsInfo(
+        name="fans_heat",
+        description="fans_heat",
+        charts=[
+            # todo add the right charts
+            Charts.fans_heat.value,
+           
+        ],
+        inputs=[
+            
+           ModelInputsInfo(
+                unit=UnitSystem.m_s.value,
+                min=0.0,
+                max=1.0,
+                step=0.1,
+                value=0.1,
+                name="Air Speed",
+                id=ElementsIDs.v_input.value,
+            ),
+            ModelInputsInfo(
+                unit="met",
+                min=0.8,
+                max=4.0,
+                step=0.1,
+                value=1.0,
+                name="Metabolic Rate",
+                id=ElementsIDs.met_input.value,
+            ),
+            ModelInputsInfo(
+                unit="clo",
+                min=0.0,
+                max=2.0,
+                step=0.1,
+                value=0.61,
+                name="Clothing Level",
+                id=ElementsIDs.clo_input.value,
+            ),
+        ],
+    )
+}
+
+
+
+
+

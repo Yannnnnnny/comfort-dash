@@ -6,7 +6,7 @@ from scipy.optimize import fsolve
 
 
 from components.charts import (
-   
+    
     t_ra_pmv,
     t_rh_pmv,
     t_hr_pmv,
@@ -193,6 +193,8 @@ def update_note_model(selected_model):
         )
 
 
+
+# 更新图表选择下拉框
 @callback(
     Output(ElementsIDs.charts_dropdown.value, "children"),
     Input(ElementsIDs.MODEL_SELECTION.value, "value"),
@@ -202,62 +204,56 @@ def update_note_model(selected_model):
         return no_update
     return chart_selector(selected_model=selected_model)
 
-
+# 更新图表
 @callback(
     Output(ElementsIDs.CHART_CONTAINER.value, "children"),
     Input(MyStores.input_data.value, "data"),
+    State(ElementsIDs.chart_selected.value, "value"),  # 获取当前选择的图表状态
 )
-def update_chart(
-    inputs: dict,
-):
+def update_chart(inputs: dict, chart_selected):
     selected_model: str = inputs[ElementsIDs.MODEL_SELECTION.value]
     units: str = inputs[ElementsIDs.UNIT_TOGGLE.value]
-    chart_selected = inputs[ElementsIDs.chart_selected.value]
 
+    # 默认图片
     image = html.Div(
-        
         [
             dmc.Title("Unfortunately this chart has not been implemented yet", order=4),
-            dmc.Image(
-                src="assets/media/chart_placeholder.png",
-            ),
+            dmc.Image(src="assets/media/chart_placeholder.png"),
         ]
     )
 
+    # 根据选中的图表类型渲染
     if chart_selected == Charts.t_rh.value.name:
         if selected_model == Models.PMV_EN.name:
             image = t_rh_pmv(inputs=inputs, model="iso")
         elif selected_model == Models.PMV_ashrae.name:
             image = t_rh_pmv(inputs=inputs, model="ashrae")
-   
 
-    if chart_selected == Charts.set_outputs.value.name:
+    elif chart_selected == Charts.set_outputs.value.name:
         if selected_model == Models.PMV_EN.name:
             image = SET_outputs_chart(inputs=inputs, model="iso")
         elif selected_model == Models.PMV_ashrae.name:
             image = SET_outputs_chart(inputs=inputs, model="ashrae")
 
-    if chart_selected == Charts.pmot_ot.value.name:
+    elif chart_selected == Charts.pmot_ot.value.name:
         if selected_model == Models.Adaptive_ASHRAE.name:
             image = pmot_ot_adaptive_ashrae(inputs=inputs, model="ashrae")
 
-    
-    if chart_selected == Charts.psychrometric.value.name:
+    elif chart_selected == Charts.psychrometric.value.name:
         print("psychrometric")
         if selected_model == Models.PMV_EN.name:
             image = t_hr_pmv(inputs=inputs, model="iso")
         elif selected_model == Models.PMV_ashrae.name:
             image = t_hr_pmv(inputs=inputs, model="ashrae")
 
-    if chart_selected == Charts.psychrometric_operative.value.name:
+    elif chart_selected == Charts.psychrometric_operative.value.name:
         print("psychrometric_operative")
         if selected_model == Models.PMV_EN.name:
-            image = t_ra_pmv(inputs=inputs, model="iso", sign="en")
+            image = t_ra_pmv(inputs=inputs, model="iso")
         elif selected_model == Models.PMV_ashrae.name:
-            image = t_ra_pmv(inputs=inputs, model="ashrae", sign="ashrae")
+            image = t_ra_pmv(inputs=inputs, model="ashrae")
 
-   
-
+    # 获取图表的备注
     note = ""
     chart: ChartsInfo
     for chart in Models[selected_model].value.charts:
@@ -277,18 +273,12 @@ def update_chart(
     )
 
 
+# 更新输出部分
 @callback(
     Output(ElementsIDs.RESULTS_SECTION.value, "children"),
     Input(MyStores.input_data.value, "data"),
 )
 def update_outputs(inputs: dict):
-   
-    # 检查 inputs 是否为 None，防止空数据导致错误
-    if inputs is None:
-        print("Inputs are None, skipping the update.")
-        return
-    
     return display_results(inputs)
-    
-    # 确保其他逻辑正常进行
+
 

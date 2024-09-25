@@ -353,7 +353,7 @@ class Models(Enum):
         note_model="The CBE comfort tools automatically calculates the relative air speed but does not calculates the dynamic insulation characteristics of clothing as specified in the ISO 7730 Section C.2., hence this value should be calculated by the user and entered as input in the CBE comfort tool.",
         charts=[
             # todo add the right charts
-            Charts.psychrometric.value,
+            # Charts.psychrometric.value,
             Charts.psychrometric_operative.value,
         ],
         inputs=[
