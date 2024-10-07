@@ -1,28 +1,30 @@
-home.py:{ if chart_selected == Charts.fans_heat.value.name:
-        print("fans_heat")
-        if selected_model == Models.Fans_Heat.name:
-            image = t_fans_heat(inputs=inputs, model="iso")}
-
-
-
-charts.py:{def t_fans_heat(inputs: dict = None, model: str = "iso"):
-    print("charts.py: t_fans_heat")
+def t_ra_pmv(inputs: dict = None, model: str = "iso"):
     results = []
+    pmv_limits = [-0.5, 0.5]  # PMV upper and lower limits
+    pmv_value = 0
+    ppd_value = 0
+    cooling_effect_value = 0
+    a_pmv_value = 0
+    t_dp_value = 0
+    set_value = 0
+    t_sens_value = 0
     
- 
-    met_d = float(inputs[ElementsIDs.met_input.value])
+    met = float(inputs[ElementsIDs.met_input.value])
+    clo = float(inputs[ElementsIDs.clo_input.value])
+    v = float(inputs[ElementsIDs.v_input.value])
 
     clo_d = clo_dynamic(
-        clo = float(inputs[ElementsIDs.clo_input.value]), met = met_d
+        clo = clo, met = met
     )
 
     vr_d = v_relative(
-        v = float(inputs[ElementsIDs.v_input.value]), met = met_d
+        v = v, met = met
     )
 
     current_tr = float(inputs[ElementsIDs.t_r_input.value])
     current_tdb = float(inputs[ElementsIDs.t_db_input.value])
     current_rh = float(inputs[ElementsIDs.rh_input.value])
+    
     
     
 
@@ -32,156 +34,150 @@ charts.py:{def t_fans_heat(inputs: dict = None, model: str = "iso"):
     print(f"current_tr: {current_tr}")
     print(f"vr_d: {vr_d}")
     print(f"current_rh: {current_rh}")
-    print(f"met_d: {met_d}")
+    print(f"met_d: {met}")
     print(f"clo_d: {clo_d}")
 
-    #计算有问题
+    
     # Traverse the upper and lower limits of PMV and calculate different rh
-   
-    for rh in np.arange(10, 110, 10):  # rh increases by 10% each time
+    for pmv_limit in pmv_limits:
+        for rh in np.arange(10, 110, 10):  # rh increases by 10% each time
             
             # Use optimize.brentq to calculate the temperature at a given rh
-        def function(x):
-            print(f"Inputs to pmv_ppd -> tdb: {current_tdb}, tr: {current_tr}, vr: {vr_d}, rh: {current_rh}, met: {met_d}, clo: {clo_d}")
-
-            # Creating a dictionary to store return values
-            intermediate_values = {
-                "tdb": current_tdb,
-                "tr": current_tr,
-                "vr": vr_d,
-                "rh": current_rh,
-                "met": met_d,
-                "clo": clo_d,
-                "valid": True  # Initially assume all values are valid.
-            }
-            # Convert vr and clo into scalar values
-            intermediate_values["vr"] = intermediate_values["vr"].item() if hasattr(intermediate_values["vr"], 'item') else intermediate_values["vr"]
-            intermediate_values["clo"] = intermediate_values["clo"].item() if hasattr(intermediate_values["clo"], 'item') else intermediate_values["clo"]
-            # check out whether the input is in the effective area.
-            if not (10 < intermediate_values["tdb"] < 40):
-                print(f"tdb {intermediate_values['tdb']} is out of range for ASHRAE limits.")
-                intermediate_values["tdb"] = 11  
-                intermediate_values["valid"] = True
-                
-            if not (10 < intermediate_values["tr"] < 40):
-                print(f"tr {intermediate_values['tr']} is out of range for ASHRAE limits.")
-                intermediate_values["tr"] = 11  
-                intermediate_values["valid"] = True
-            if not (0 < intermediate_values["vr"] < 2):
-                print(f"vr {intermediate_values['vr']} is out of range for ASHRAE limits.")
-                intermediate_values["vr"] = 0.1  
-                intermediate_values["valid"] = True
-            if not (1 < intermediate_values["met"] < 4):
-                print(f"met {intermediate_values['met']} is out of range for ASHRAE limits.")
-                intermediate_values["met"] = 1.1  
-                intermediate_values["valid"] = True
-            if not (0 < intermediate_values["clo"] < 1.5):
-                print(f"clo {intermediate_values['clo']} is out of range for ASHRAE limits.")
-                intermediate_values["clo"] = 0.1  
-                intermediate_values["valid"] = True
-
-            print("5 if ok")
-            print(f"Inputs to phs -> {intermediate_values}")
-        
-                        
-            result = use_fans_heatwaves(
-                tdb=intermediate_values["tdb"],
-                tr=intermediate_values["tr"],
-                vr=intermediate_values["vr"],
-                rh=intermediate_values["rh"],
-                met=intermediate_values["met"],
-                clo=intermediate_values["clo"]
-            )
+            print("Function called")
+            def function(x):
+                print("Entered function")  # 确认函数是否被调用
+            
+                # Create a dictionary to store return values
+                intermediate_values = {
+                    "tdb": current_tdb,
+                    "tr": current_tr,
+                    "vr": vr_d,
+                    "rh": current_rh,
+                    "met": met,
+                    "clo": clo_d,
+                    "valid": True  # Initial assumption is that all values ​​are valid
+                }
+            
+                # Convert vr and clo to scalar values
+                intermediate_values["vr"] = intermediate_values["vr"].item() if hasattr(intermediate_values["vr"], 'item') else intermediate_values["vr"]
+                intermediate_values["clo"] = intermediate_values["clo"].item() if hasattr(intermediate_values["clo"], 'item') else intermediate_values["clo"]
+                print(f"Intermediate values: {intermediate_values}")  # 查看初始中间值
+            
+                # Check if the input is in the effective area
+                if not (10 < intermediate_values["tdb"] < 40):
+                    print(f"tdb {intermediate_values['tdb']} is out of range for ASHRAE limits.")
+                    intermediate_values["tdb"] = 11
+                    intermediate_values["valid"] = True
+                    
+                if not (10 < intermediate_values["tr"] < 40):
+                    print(f"tr {intermediate_values['tr']} is out of range for ASHRAE limits.")
+                    intermediate_values["tr"] = 11
+                    intermediate_values["valid"] = True
+            
+                if not (0 < intermediate_values["vr"] < 2):
+                    print(f"vr {intermediate_values['vr']} is out of range for ASHRAE limits.")
+                    intermediate_values["vr"] = 0.1
+                    intermediate_values["valid"] = True
+            
+                if not (1 < intermediate_values["met"] < 4):
+                    print(f"met {intermediate_values['met']} is out of range for ASHRAE limits.")
+                    intermediate_values["met"] = 1.1
+                    intermediate_values["valid"] = True
+            
+                if not (0 < intermediate_values["clo"] < 1.5):
+                    print(f"clo {intermediate_values['clo']} is out of range for ASHRAE limits.")
+                    intermediate_values["clo"] = 0.1
+                    intermediate_values["valid"] = True
+            
+                print("After range checks")  # 确保所有范围检查后继续执行
+            
+                # PMV/PPD with elevated air speed     
+                try:
+                    result = pmv_ppd(
+                        tdb=intermediate_values["tdb"],
+                        tr=intermediate_values["tr"],
+                        vr=intermediate_values["vr"],
+                        rh=intermediate_values["rh"],
+                        met=intermediate_values["met"],
+                        clo=intermediate_values["clo"]
+                    )
+                    pmv_value = result.get("pmv", None)
+                    ppd_value = result.get("ppd", None)
+                    print(f"PMV/PPD Result -> pmv_value: {pmv_value}, ppd_value: {ppd_value}")  # 打印PMV/PPD结果
+                except Exception as e:
+                    print(f"Error in pmv_ppd: {e}")
+            
+                # Cooling effect
+                try:
+                    result = cooling_effect(
+                        tdb=intermediate_values["tdb"],
+                        tr=intermediate_values["tr"],
+                        vr=intermediate_values["vr"],
+                        rh=intermediate_values["rh"],
+                        met=intermediate_values["met"],
+                        clo=intermediate_values["clo"]
+                    )
+                    cooling_effect_value = result.get("cooling_effect", None)
+                    print(f"Cooling effect result: {cooling_effect_value}")  # 打印Cooling effect结果
+                except Exception as e:
+                    print(f"Error in cooling_effect: {e}")
+            
+                # Relative air speed 
+                try:
+                    result = a_pmv(
+                        tdb=intermediate_values["tdb"],
+                        tr=intermediate_values["tr"],
+                        vr=intermediate_values["vr"],
+                        rh=intermediate_values["rh"],
+                        met=intermediate_values["met"],
+                        clo=intermediate_values["clo"]
+                    )
+                    a_pmv_value = result.get("a_pmv", None)
+                    print(f"Relative air speed result: {a_pmv_value}")  # 打印Relative air speed结果
+                except Exception as e:
+                    print(f"Error in a_pmv: {e}")
+            
+                # t_dp (Dry-bulb temperature at still air)
+                try:
+                    result = t_dp(
+                        tdb=intermediate_values["tdb"],
+                        rh=intermediate_values["rh"]
+                    )
+                    t_dp_value = result.get("t_dp", None)
+                    print(f"Dry-bulb temperature result: {t_dp_value}")  # 打印Dry-bulb temperature结果
+                except Exception as e:
+                    print(f"Error in t_dp: {e}")
+            
+                # Two nodes for sensation and SET
+                try:
+                    result = two_nodes(
+                        tdb=intermediate_values["tdb"],
+                        tr=intermediate_values["tr"],
+                        vr=intermediate_values["vr"],
+                        rh=intermediate_values["rh"],
+                        met=intermediate_values["met"],
+                        clo=intermediate_values["clo"]
+                    )
+                    set_value = result.get("set", None)
+                    t_sens_value = result.get("t_sens", None)
+                    print(f"Two nodes result -> SET: {set_value}, Sensation: {t_sens_value}")  # 打印Two nodes结果
+                except Exception as e:
+                    print(f"Error in two_nodes: {e}")
+            
+                print("Function completed")  # 确认函数的执行完成
             
             
-           
-            e_skin_value = result.get("e_skin", None)
-            e_rsw_value = result.get("e_rsw", None)
-            e_diff_value = result.get("e_diff", None)
-            e_max_value = result.get("e_max", None)
-            q_sensible_value = result.get("q_sensible", None)
-            q_skin_value = result.get("q_skin", None)
-            q_res_value = result.get("q_res", None)
-            t_core_value = result.get("t_core", None)
-            q_core_value = result.get("q_core", None)
-            heat_strain_value = result.get("heat_strain", None)
-            
-            # Print all values in one statement
-            print(f"tdb: {intermediate_values['tdb']}, e_skin_value: {e_skin_value}, e_rsw_value: {e_rsw_value}, e_diff_value: {e_diff_value}, e_max_value: {e_max_value}, q_sensible_value: {q_sensible_value}, q_skin_value: {q_skin_value}, q_res_value: {q_res_value}, t_core_value: {t_core_value}, q_core_value: {q_core_value}, heat_strain_value:{heat_strain_value}")
-           
-          
-            return e_skin_value, q_skin_value, heat_strain_value
-        
-        e_skin_value, q_skin_value, heat_strain_value = function(x=25)
-        
-        
-        # store the outcomes into result lists
-        
-        results.append({
-                
-            "The green areas show the temperature and relative humidity conditions in which the use of fans provides more cooling to the human body of a standard subject than still air. In the dark green region, while the use of fans is still beneficial, people are most likely suffering from heat strain. The red area demarcates the region in which fans should not be used."
-        })
-}
 
 
-show_results.py:{elif selected_model == Models.Fans_Heat.name:
-        columns = 1
-        fans_heat = use_fans_heatwaves(
-                tdb=intermediate_values["tdb"],
-                tr=intermediate_values["tr"],
-                vr=intermediate_values["vr"],
-                rh=intermediate_values["rh"],
-                met=intermediate_values["met"],
-                clo=intermediate_values["clo"]
-        )
-        results.append(dmc.Center(dmc.Text(f"e_skin: {fans_heat['e_skin']}")))
-        results.append(dmc.Center(dmc.Text(f"q_skin: {fans_heat['q_skin']}")))
-        results.append(dmc.Center(dmc.Text(f"heat_strain: {fans_heat['heat_strain']}")))    
-}
-
-my_config_file.py:{
-   Fans_Heat: ModelsInfo = ModelsInfo(
-        name="fans_heat",
-        description="fans_heat",
-        charts=[
-            # todo add the right charts
-            Charts.fans_heat.value,
-           
-        ],
-        inputs=[
-            
-           ModelInputsInfo(
-                unit=UnitSystem.m_s.value,
-                min=0.0,
-                max=1.0,
-                step=0.1,
-                value=0.1,
-                name="Air Speed",
-                id=ElementsIDs.v_input.value,
-            ),
-            ModelInputsInfo(
-                unit="met",
-                min=0.8,
-                max=4.0,
-                step=0.1,
-                value=1.0,
-                name="Metabolic Rate",
-                id=ElementsIDs.met_input.value,
-            ),
-            ModelInputsInfo(
-                unit="clo",
-                min=0.0,
-                max=2.0,
-                step=0.1,
-                value=0.61,
-                name="Clothing Level",
-                id=ElementsIDs.clo_input.value,
-            ),
-        ],
-    )
-}
-
-
-
-
-
+            results.append({
+                    
+                "PMV with elevated air speed" : pmv_value,
+                "PPD with elevated air speed" : ppd_value,
+                "Sensation" : t_sens_value,
+                "SET" : set_value,
+                "Relative air speed" : a_pmv_value,
+                "Dynamic clothing" : clo_d,
+                "Dry-bulb Tmp at still air" : t_dp_value,
+                "Cooling effect" : cooling_effect_value
+            })
+    return result

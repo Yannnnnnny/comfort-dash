@@ -1,162 +1,23 @@
-
-def t_ra_pmv(inputs: dict = None, model: str = "iso"):
-    results = []
-    pmv_limits = [-0.5, 0.5]  # PMV upper and lower limits
- 
-    met_d = float(inputs[ElementsIDs.met_input.value])
-
-    clo_d = clo_dynamic(
-        clo = float(inputs[ElementsIDs.clo_input.value]), met = met_d
-    )
-
-    vr_d = v_relative(
-        v = float(inputs[ElementsIDs.v_input.value]), met = met_d
-    )
-
-    current_tr = float(inputs[ElementsIDs.t_r_input.value])
-    current_tdb = float(inputs[ElementsIDs.t_db_input.value])
-    current_rh = float(inputs[ElementsIDs.rh_input.value])
-    
-    
-    
-
-    psy_data = psy_ta_rh(tdb=current_tdb, rh=current_rh, p_atm=101325)["hr"] * 1000  
-    psy_data_rh = psy_data
-    print(f"current_tdb: {current_tdb}")
-    print(f"current_tr: {current_tr}")
-    print(f"vr_d: {vr_d}")
-    print(f"current_rh: {current_rh}")
-    print(f"met_d: {met_d}")
-    print(f"clo_d: {clo_d}")
-
-    
-    # Traverse the upper and lower limits of PMV and calculate different rh
-    for pmv_limit in pmv_limits:
-        for rh in np.arange(10, 110, 10):  # rh increases by 10% each time
-            
-            # Use optimize.brentq to calculate the temperature at a given rh
-            def function(x):
-                print(f"Inputs to pmv_ppd -> tdb: {current_tdb}, tr: {current_tr}, vr: {vr_d}, rh: {current_rh}, met: {met_d}, clo: {clo_d}")
-    
-                # 创建一个字典来存储返回值
-                intermediate_values = {
-                    "tdb": current_tdb,
-                    "tr": current_tr,
-                    "vr": vr_d,
-                    "rh": current_rh,
-                    "met": met_d,
-                    "clo": clo_d,
-                    "valid": True  # 初始假设所有值有效
-                }
-
-                # 将 vr 和 clo 转换为标量值
-                intermediate_values["vr"] = intermediate_values["vr"].item() if hasattr(intermediate_values["vr"], 'item') else intermediate_values["vr"]
-                intermediate_values["clo"] = intermediate_values["clo"].item() if hasattr(intermediate_values["clo"], 'item') else intermediate_values["clo"]
-
-                # check out whether the input is in the effective area.
-                if not (10 < intermediate_values["tdb"] < 40):
-                    print(f"tdb {intermediate_values['tdb']} is out of range for ASHRAE limits.")
-                    intermediate_values["tdb"] = 11  
-                    intermediate_values["valid"] = True
-                    
-                if not (10 < intermediate_values["tr"] < 40):
-                    print(f"tr {intermediate_values['tr']} is out of range for ASHRAE limits.")
-                    intermediate_values["tr"] = 11  
-                    intermediate_values["valid"] = True
-
-                if not (0 < intermediate_values["vr"] < 2):
-                    print(f"vr {intermediate_values['vr']} is out of range for ASHRAE limits.")
-                    intermediate_values["vr"] = 0.1  
-                    intermediate_values["valid"] = True
-
-                if not (1 < intermediate_values["met"] < 4):
-                    print(f"met {intermediate_values['met']} is out of range for ASHRAE limits.")
-                    intermediate_values["met"] = 1.1  
-                    intermediate_values["valid"] = True
-
-                if not (0 < intermediate_values["clo"] < 1.5):
-                    print(f"clo {intermediate_values['clo']} is out of range for ASHRAE limits.")
-                    intermediate_values["clo"] = 0.1  
-                    intermediate_values["valid"] = True
-   
-                print("5 if ok")
-                print(f"Inputs to pmv_ppd -> {intermediate_values}")
-
-               
-                
-                
-                result = pmv_ppd(
-                    tdb=intermediate_values["tdb"],
-                    tr=intermediate_values["tr"],
-                    vr=intermediate_values["vr"],
-                    rh=intermediate_values["rh"],
-                    met=intermediate_values["met"],
-                    clo=intermediate_values["clo"]
-                )
-                
-                
-               
-                pmv_value = result.get("pmv", None)
-                ppd_value = result.get("ppd", None)
-                
-
-                print(f"tdb: {intermediate_values['tdb']}, pmv_value: {pmv_value}, ppd_value: {ppd_value}, pmv_limit:{pmv_limit}")
-                
-               
-                
-                return pmv_value, ppd_value
-
-            
-            pmv_value, ppd_value = function(x=25)
-            
-            # print final result
-            print(f"Final results -> pmv: {pmv_value}, ppd: {ppd_value}")
-
-            # store the outcomes into result lists
-            
-            
-            results.append({
-                    
-                    "pmv": pmv_value, 
-                    "ppd": ppd_value,
-                    "category": "",
-            })
-
-            
-
-  
-            # calculation part end    
-     
-    # Initialize figure and axis
-
+  # calculation part end    
+         # Initialize figure and axis
     p_tdb = current_tdb
     p_rh = current_rh
-
+    
     air_speed = vr_d
-    met = met_d
+    met = met
     clo = clo_d
-
-    fig, ax = plt.subplots(figsize=(6, 4))
-
+    
+    # Create an empty figure
+    fig = go.Figure()
+    
     print("Create psychrometric chart")
-
+    
     # Define adjustments
-    air_speed_adjustment = 0.1  # Increment/decrement for air speed
-    met_adjustment = 0.1  # Increment/decrement for metabolic rate
-    clo_adjustment = 0.3  # Increment/decrement for clothing value
-
-    # Category III
-    offset = (air_speed + air_speed_adjustment) * 1 - (met + met_adjustment) * 2 - (clo + clo_adjustment) * 2
-    category_3_up = np.linspace(20.5 + offset, 27.1 + offset, 100)
-    category_3_low = np.array([33.3 + offset, 24.2 + offset])
-    category_3_x = np.concatenate((category_3_up, category_3_low))
-    category_3_y = np.concatenate(
-        (
-            [psy_ta_rh(tdb=t, rh=100, p_atm=101325)["hr"] * 1000 for t in category_3_up],
-            [0, 0],
-        )
-    )
-    ax.fill_between(category_3_x, category_3_y, color="lightgreen", label="Category III")
+    air_speed_adjustment = a_pmv_value  # Increment/decrement for air speed
+    met_adjustment =  1 # Increment/decrement for metabolic rate
+    clo_adjustment = 1  # Increment/decrement for clothing value
+    
+    
     
     # Category II
     offset = (air_speed - air_speed_adjustment) * 1 - (met - met_adjustment) * 2 - (clo - clo_adjustment) * 2
@@ -169,60 +30,100 @@ def t_ra_pmv(inputs: dict = None, model: str = "iso"):
             [0, 0],
         )
     )
-    ax.fill_between(category_2_x, category_2_y, color="green", label="Category II")
+    fig.add_trace(go.Scatter(
+        x=category_2_x,
+        y=category_2_y,
+        fill='toself',
+        fillcolor='green',
+        mode='lines',
+        line=dict(color='green'),
+        name="Category II",
+        hoverinfo='x+y'
+    ))
     
-    # Category I
-    offset = (air_speed + air_speed_adjustment) * 1 - (met + met_adjustment) * 2 - (clo + clo_adjustment) * 2
-    category_1_up = np.linspace(22.7 + offset, 24.7 + offset, 100)
-    category_1_low = np.array([30 + offset, 27.4 + offset])
-    category_1_x = np.concatenate((category_1_up, category_1_low))
-    category_1_y = np.concatenate(
-        (
-            [psy_ta_rh(tdb=t, rh=100, p_atm=101325)["hr"] * 1000 for t in category_1_up],
-            [0, 0],
-        )
-    )
-    ax.fill_between(category_1_x, category_1_y, color="darkgreen", label="Category I")
-
-    # 更新红点位置
+    
+    # Red point update
     red_point = [p_tdb, psy_ta_rh(p_tdb, p_rh, p_atm=101325)["hr"] * 1000]
-    ax.scatter(red_point[0], red_point[1], color="red", label="Current Condition")
+    fig.add_trace(go.Scatter(
+        x=[red_point[0]],
+        y=[red_point[1]],
+        mode='markers',
+        marker=dict(color='red', size=10),
+        name="Current Condition",
+        hoverinfo='x+y'
+    ))
+    
+        # Check if the red point is within the filled area
+    tolerance = 0.1
 
-    # 绘制红点周围的虚线圆圈
+# Check if the red point is outside the filled green area (Category II)
+    if (red_point[0] > max(category_2_x) + tolerance or red_point[0] < min(category_2_x) - tolerance) or \
+       (red_point[1] > max(category_2_y) + tolerance or red_point[1] < min(category_2_y) - tolerance):
+        
+        fig.add_annotation(
+            x=red_point[0],
+            y=red_point[1],
+            text="Current condition is outside the acceptable range!",
+            showarrow=True,
+            arrowhead=2,
+            ax=0,
+            ay=-40,
+            font=dict(color='red', size=12),
+            bgcolor='white',
+            bordercolor='red',
+            borderwidth=1,
+            opacity=0.8
+        )
+     
+    # Circle around the red point
     theta = np.linspace(0, 2 * np.pi, 100)
     circle_x = red_point[0] + 0.6 * np.cos(theta)
     circle_y = red_point[1] + 1.2 * np.sin(theta)
-    ax.plot(circle_x, circle_y, color="red", linestyle="--")
+    fig.add_trace(go.Scatter(
+        x=circle_x,
+        y=circle_y,
+        mode='lines',
+        line=dict(color='red', dash='dash'),
+        showlegend=False,
+        hoverinfo='skip'
+    ))
 
-    print("Plot humidity ratio lines")
-    
-    # 绘制湿度比曲线
+    # Plot humidity ratio lines
     rh_list = np.arange(0, 101, 10)
     tdb = np.linspace(10, 36, 500)
     for rh in rh_list:
         hr_list = np.array(
             [psy_ta_rh(tdb=t, rh=rh, p_atm=101325)["hr"] * 1000 for t in tdb]
         )
-        ax.plot(tdb, hr_list, color="black", linewidth=1, label=f"{rh}% RH")
-
-    # 设置坐标轴和标题
-    ax.set_xlabel("Dry-bulb Temperature (°C)")
-    ax.set_ylabel("Humidity Ratio (g_w/kg_da)")
-    ax.set_title("Psychrometric (air temperature)")
-    ax.legend()
-    ax.grid(True)
-    plt.tight_layout()
-
-    # 保存为 base64
-    my_stringIObytes = io.BytesIO()
-    plt.savefig(my_stringIObytes, format="png", dpi=300, bbox_inches="tight")
-    my_stringIObytes.seek(0)
-    my_base64_jpgData = base64.b64encode(my_stringIObytes.read()).decode()
-    plt.close(fig)
-    
-    return dmc.Image(
-        src=f"data:image/png;base64, {my_base64_jpgData}",
-        alt="Psychrometric chart",
-        py=0,
+        fig.add_trace(go.Scatter(
+            x=tdb,
+            y=hr_list,
+            mode='lines',
+            line=dict(color='black', width=1),
+            name=f"{rh}% RH",
+            hoverinfo='x+y'
+        ))
+        #hoverdata?
+        
+   
+    fig.update_layout(
+        title="Interactive Psychrometric Chart",
+        xaxis_title="Dry-bulb Temperature (°C)",
+        yaxis_title="Humidity Ratio (g_w/kg_da)",
+        legend_title="Categories",
+        hovermode="closest",  # Ensures that hover will be interactive
+        legend=dict(
+            x=1.05,  # Move legend to the right
+            y=1,  # Align legend to the top
+            traceorder="normal",
+            font=dict(
+                size=12,
+            ),
+            bgcolor="White",  # Set the background of the legend to white
+            bordercolor="Black",
+            borderwidth=1
+        )
     )
-
+    
+    # Final plot
+    return dcc.Graph(figure=fig)

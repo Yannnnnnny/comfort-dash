@@ -3,7 +3,7 @@ import os
 import dash
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
-from dash import Dash, dcc, html, Input, Output, State
+from dash import Dash, dcc, html
 from icecream import install, ic
 
 from components.footer import my_footer
@@ -44,7 +44,7 @@ app = Dash(
     external_scripts=["https://cdn.plot.ly/plotly-basic-2.26.2.min.js"],
     prevent_initial_callbacks=True,
     use_pages=True,
-    serve_locally=False,
+    serve_locally=True,
 )
 app.config.suppress_callback_exceptions = True
 
@@ -63,7 +63,7 @@ app.layout = dmc.MantineProvider(
     children=html.Div(
         [
             my_navbar(),
-            dcc.Location(id=ElementsIDs.URL.value, refresh=False),
+            dcc.Location(id=ElementsIDs.URL.value),
             dcc.Store(id=MyStores.input_data.value, storage_type="local"),
             html.Div(
                 dmc.Container(
@@ -82,12 +82,11 @@ app.layout = dmc.MantineProvider(
 )
 
 
-
 if __name__ == "__main__":
     app.run_server(
         debug=Config.DEBUG.value,
         host="127.0.0.1",
-        port=os.environ.get("PORT_APP", 7600),
+        port=os.environ.get("PORT_APP", 9090),
         processes=1,
         threaded=True,
     )
