@@ -6,7 +6,6 @@ from pythermalcomfort.psychrometrics import psy_ta_rh, p_sat, t_dp, t_wb, enthal
 from pythermalcomfort import set_tmp, two_nodes
 from pythermalcomfort.models import pmv, adaptive_en, adaptive_ashrae, cooling_effect
 from pythermalcomfort.utilities import v_relative, clo_dynamic, units_converter
-
 from scipy import optimize
 from components.drop_down_inline import generate_dropdown_inline
 from utils.my_config_file import (
@@ -465,7 +464,7 @@ def generate_tdb_hr_chart(
 
     ##title
     layout = go.Layout(
-        title="Psychrometric (air temperature)",
+        margin=dict(l=40, r=40, t=40, b=40),
         xaxis=dict(
             title=(
                 "Dry-bulb Temperature [°C]"
@@ -697,7 +696,7 @@ def generate_operative_chart(
 
     # layout
     layout = go.Layout(
-        title="Psychrometric (operative temperature)",
+        margin=dict(l=40, r=40, t=40, b=40),
         xaxis=dict(
             title=(
                 "operative Temperature [°C]"
@@ -1202,8 +1201,9 @@ def get_heat_losses(inputs: dict = None, model: str = "ashrae", units: str = "SI
         ),
         template="plotly_white",
         autosize=False,
+        margin=dict(t=40),
+        height=600,
         width=700,
-        height=700,
     )
 
     return fig
@@ -1376,8 +1376,7 @@ def speed_temp_pmv(
         ),
         # y title
         template="plotly_white",
-        width=700,
-        height=700,
+        margin=dict(l=40, r=40, t=40, b=40),
         xaxis=dict(
             range=[20, 34] if units == UnitSystem.SI.value else [68, 92],  # x range
             tickmode="linear",
@@ -1517,7 +1516,6 @@ def psy_ashrae_pmv_operative(
 
     # layout
     layout = go.Layout(
-        title="Psychrometric (operative temperature)",
         xaxis=dict(
             title=(
                 "operative Temperature [°C]"
@@ -1541,6 +1539,7 @@ def psy_ashrae_pmv_operative(
             linecolor="lightgrey",
             side="right",
         ),
+        margin=dict(l=40, r=40, t=40, b=40),
         showlegend=True,
         plot_bgcolor="white",
         annotations=[
@@ -1733,7 +1732,7 @@ def psy_ashrae_pmv(
 
     # layout
     layout = go.Layout(
-        title="Psychrometric (air temperature)",
+        margin=dict(l=40, r=40, t=40, b=40),
         xaxis=dict(
             title=(
                 "Dry-bulb Temperature [°C]"
@@ -2176,7 +2175,8 @@ def SET_outputs_chart(
         ),
         template="plotly_white",
         autosize=False,
+        margin=dict(t=40),
+        height=600,
         width=700,
-        height=700,
     )
     return fig
