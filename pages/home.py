@@ -7,11 +7,11 @@ from components.charts import (
     t_rh_pmv,
     chart_selector,
     adaptive_chart,
-    generate_tdb_hr_chart,
+    psychrometric_en,
     SET_outputs_chart,
     speed_temp_pmv,
     get_heat_losses,
-    psy_ashrae_pmv,
+    psychrometric_ashrae,
     generate_operative_chart,
     psy_ashrae_pmv_operative,
 )
@@ -367,13 +367,13 @@ def update_chart(inputs: dict, function_selection: str):
             selected_model == Models.PMV_ashrae.name
             and function_selection == Functionalities.Default.value
         ):
-            image = psy_ashrae_pmv(inputs=inputs, units=units)
+            image = psychrometric_ashrae(inputs=inputs, units=units)
 
         elif (
             selected_model == Models.PMV_EN.name
             and function_selection == Functionalities.Default.value
         ):
-            image = generate_tdb_hr_chart(inputs=inputs, model="iso", units=units)
+            image = psychrometric_en(inputs=inputs, model="iso", units=units)
 
     elif chart_selected == Charts.psychrometric_operative.value.name:
         if (
