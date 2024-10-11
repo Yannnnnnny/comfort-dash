@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import math
 import plotly.graph_objs as go
-
 from pythermalcomfort import set_tmp, two_nodes
 from pythermalcomfort.models import pmv, adaptive_en, adaptive_ashrae, cooling_effect
 from pythermalcomfort.utilities import v_relative, clo_dynamic, units_converter
