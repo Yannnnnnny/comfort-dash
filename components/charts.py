@@ -195,11 +195,8 @@ def adaptive_chart(
         ),
         legend=dict(x=0.8, y=1),
         showlegend=False,
-        # plot_bgcolor="white",
         template="plotly_white",
-        # margin=dict(l=40, r=40, t=40, b=40),
-        width=700,
-        height=525,
+        margin=dict(l=40, r=40, t=40, b=40),
     )
 
     fig = go.Figure(data=traces, layout=layout)
