@@ -434,6 +434,7 @@ def update_chart(inputs: dict, function_selection: str):
         else dcc.Graph(
             id=ElementsIDs.GRAPH_HOVER.value,
             figure=image,  # Pass the Plotly figure object here
+            config={"displayModeBar": False},
         )
     )
 

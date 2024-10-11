@@ -13,6 +13,7 @@ from utils.my_config_file import (
     Functionalities,
     CompareInputColor,
     ComfortLevel,
+    Charts,
 )
 
 
@@ -193,7 +194,7 @@ def display_results(inputs: dict):
         results.append(
             dmc.Center(
                 dmc.Text(
-                    f"80% acceptability limits = Operative temperature: {round(adaptive.tmp_cmf_90_low,1)} to {round(adaptive.tmp_cmf_90_up,1)} {temp_unit}"
+                    f"90% acceptability limits = Operative temperature: {round(adaptive.tmp_cmf_90_low,1)} to {round(adaptive.tmp_cmf_90_up,1)} {temp_unit}"
                 )
             )
         )
@@ -207,6 +208,11 @@ def display_results(inputs: dict):
             v=inputs[ElementsIDs.v_input.value],
             units=units,
         )
+
+    if selected_model == Models.PMV_ashrae.name:
+        if inputs[ElementsIDs.chart_selected.value] == Charts.set_outputs.value.name or \
+                inputs[ElementsIDs.chart_selected.value] == Charts.thl_psychrometric.value.name:
+            return None
 
     return dmc.Stack(
         children=results,
