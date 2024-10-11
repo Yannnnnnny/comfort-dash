@@ -488,7 +488,9 @@ def psychrometric_en(
 
     ##title
     layout = go.Layout(
-        margin=dict(l=40, r=40, t=40, b=40),
+        margin=dict(l=10, t=0),
+        height=500,
+        width=680,
         xaxis=dict(
             title=(
                 "Dry-bulb Temperature [°C]"
@@ -1082,7 +1084,9 @@ def psychrometric_ashrae(
 
     # layout
     layout = go.Layout(
-        margin=dict(l=40, r=40, t=40, b=40),
+        margin=dict(l=10, t=0),
+        height=500,
+        width=680,
         xaxis=dict(
             title=(
                 "Dry-bulb Temperature [°C]"
@@ -1367,7 +1371,9 @@ def t_rh_pmv(
         ),
         showlegend=False,
         plot_bgcolor="white",
-        margin=dict(l=40, r=40, t=40, b=40),
+        margin=dict(l=10, t=0),
+        height=500,
+        width=680,
         hovermode="closest",
         hoverdistance=5,
     )
@@ -1546,7 +1552,9 @@ def speed_temp_pmv(
         ),
         # y title
         template="plotly_white",
-        margin=dict(l=40, r=40, t=40, b=40),
+        margin=dict(l=10, t=0),
+        height=500,
+        width=680,
         xaxis=dict(
             range=[20, 34] if units == UnitSystem.SI.value else [68, 92],  # x range
             tickmode="linear",
@@ -1786,9 +1794,9 @@ def get_heat_losses(inputs: dict = None, model: str = "ashrae", units: str = "SI
         ),
         template="plotly_white",
         autosize=False,
-        margin=dict(t=40),
+        margin=dict(l=0, r=10, t=0),
         height=600,
-        width=700,
+        width=600,
     )
 
     return fig
@@ -2181,8 +2189,8 @@ def SET_outputs_chart(
         ),
         template="plotly_white",
         autosize=False,
-        margin=dict(t=40),
+        margin=dict(l=0, r=10, t=0),
         height=600,
-        width=700,
+        width=600,
     )
     return fig
