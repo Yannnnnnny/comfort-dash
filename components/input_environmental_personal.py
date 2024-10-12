@@ -2,7 +2,6 @@ import dash
 import dash_mantine_components as dmc
 from dash import html, callback, Output, Input, State
 from components.drop_down_inline import generate_dropdown_selection
-
 from components.dropdowns import options
 from utils.my_config_file import (
     ModelInputsInfo,
@@ -14,12 +13,14 @@ from utils.my_config_file import (
     ClothingSelection,
     Functionalities,
     AdaptiveENSpeeds,
+    AdaptiveAshraeSpeeds,
 )
 from utils.website_text import (
     TextWarning,
 )
 import dash
 from components.show_results import display_results
+import time
 
 
 def modal_custom_ensemble():
@@ -351,10 +352,9 @@ def input_environmental_personal(
             if input_id in {ElementsIDs.met_input.value, ElementsIDs.clo_input.value}:
                 default_input = create_autocomplete(values)
             elif (
-                selected_model == Models.Adaptive_EN.name
-                or selected_model == Models.Adaptive_ASHRAE.name
+                selected_model == Models.Adaptive_EN.name or selected_model == Models.Adaptive_ASHRAE.name
             ) and input_id == ElementsIDs.v_input.value:
-                default_input = create_select_component(values)
+                default_input = create_select_component(values, selected_model)
             else:
                 default_input = dmc.NumberInput(
                     value=values.value,
@@ -484,7 +484,6 @@ def input_environmental_personal(
     prevent_initial_call=True,
 )
 def handle_modal(clo_value, _nc_open, _nc_close, _nc_submit, opened, selected_model):
-
     ctx = dash.callback_context.triggered_id
 
     if ctx == ElementsIDs.modal_custom_ensemble_open.value:
@@ -536,22 +535,54 @@ def create_autocomplete(values: ModelInputsInfo):
     )
 
 
-def create_select_component(values: ModelInputsInfo):
-    air_speed_box = {
-        "id": ElementsIDs.v_input.value,
-        "question": None,
-        "options": [speed.value for speed in AdaptiveENSpeeds],
-        "multi": False,
-        "default": values.value,
+def create_select_component(values: ModelInputsInfo, model_name):
+    air_speed_box = {}
+    speed_options = {
+        Models.Adaptive_EN.name: [speed.value for speed in AdaptiveENSpeeds],
+        Models.Adaptive_ASHRAE.name: [speed.value for speed in AdaptiveAshraeSpeeds],
     }
+
+    if model_name in speed_options:
+        air_speed_box = {
+            "id": ElementsIDs.v_input.value,
+            "question": None,
+            "options": speed_options[model_name],
+            "multi": False,
+            "default": values.value,
+        }
+
     return generate_dropdown_selection(
         air_speed_box, clearable=False, only_dropdown=True
     )
 
 
-def update_options(input_value, selection_enum, min_value, max_value):
-    if input_value is None or input_value == "":
+def get_min_max_range(model, input_type):
+    model_info = Models[model].value
+    for input_info in model_info.inputs:
+        if (
+            input_type == "metabolic_rate"
+            and input_info.id == ElementsIDs.met_input.value
+        ):
+            return input_info.min, input_info.max
+        elif (
+            input_type == "clothing_level"
+            and input_info.id == ElementsIDs.clo_input.value
+        ):
+            return input_info.min, input_info.max
+    return None
+
+
+def update_options(input_value, selection_enum, model, input_type):
+    range_result = get_min_max_range(model, input_type)
+
+    # If range_result is None, it means the input type is not applicable for this model
+    if range_result is None:
         return [], ""
+
+    min_value, max_value = range_result
+
+    if input_value is None or input_value == "":
+        return [option.value for option in selection_enum], ""
 
     option_values = [option.value for option in selection_enum]
 
@@ -565,12 +596,9 @@ def update_options(input_value, selection_enum, min_value, max_value):
         elif input_number > max_value:
             return option_values, max_value
 
-        # input_number = float(input_value)
         filtered_options = []
         for option in selection_enum:
-            # Extract the value
             option_value = float(option.value.split(":")[-1].strip().split()[0])
-            # Perform comparison
             if abs(option_value - input_number) < 1:
                 filtered_options.append(option.value)
 
@@ -586,51 +614,29 @@ def update_options(input_value, selection_enum, min_value, max_value):
     return filtered_options, input_value
 
 
-@callback(
-    Output(ElementsIDs.met_input.value, "data"),
-    Output(ElementsIDs.met_input.value, "value"),
-    Input(ElementsIDs.met_input.value, "value"),
-    State(ElementsIDs.met_input.value, "data"),
+def create_and_update_callback(element_id, selection_enum, input_type):
+    @callback(
+        Output(element_id, "data"),
+        Output(element_id, "value"),
+        Input(element_id, "value"),
+        State(element_id, "data"),
+        State(ElementsIDs.MODEL_SELECTION.value, "value"),
+    )
+    def callback_function(input_value, _, selected_model):
+        return update_options(input_value, selection_enum, selected_model, input_type)
+
+    return callback_function
+
+
+update_metabolic_rate_options = create_and_update_callback(
+    ElementsIDs.met_input.value, MetabolicRateSelection, "metabolic_rate"
 )
-def update_metabolic_rate_options(input_value, _):
-    return update_options(input_value, MetabolicRateSelection, 1.0, 4.0)
-
-
-@callback(
-    Output(ElementsIDs.clo_input.value, "data"),
-    Output(ElementsIDs.clo_input.value, "value"),
-    Input(ElementsIDs.clo_input.value, "value"),
-    State(ElementsIDs.clo_input.value, "data"),
+update_clothing_level_options = create_and_update_callback(
+    ElementsIDs.clo_input.value, ClothingSelection, "clothing_level"
 )
-def update_clothing_level_options(input_value, _):
-    return update_options(input_value, ClothingSelection, 0.0, 1.5)
-
-
-@callback(
-    Output(ElementsIDs.met_input_input2.value, "data"),
-    Output(ElementsIDs.met_input_input2.value, "value"),
-    Input(ElementsIDs.met_input_input2.value, "value"),
-    State(ElementsIDs.met_input_input2.value, "data"),
+update_metabolic_rate_options_input2 = create_and_update_callback(
+    ElementsIDs.met_input_input2.value, MetabolicRateSelection, "metabolic_rate"
 )
-def update_metabolic_rate_options(input_value, _):
-    return update_options(input_value, MetabolicRateSelection, 1.0, 4.0)
-
-
-@callback(
-    Output(ElementsIDs.clo_input_input2.value, "data"),
-    Output(ElementsIDs.clo_input_input2.value, "value"),
-    Input(ElementsIDs.clo_input_input2.value, "value"),
-    State(ElementsIDs.clo_input_input2.value, "data"),
+update_clothing_level_options_input2 = create_and_update_callback(
+    ElementsIDs.clo_input_input2.value, ClothingSelection, "clothing_level"
 )
-def update_clothing_level_options(input_value, _):
-    return update_options(input_value, ClothingSelection, 0.0, 1.5)
-
-
-@callback(
-    Output(ElementsIDs.v_input.value, "data"),
-    Output(ElementsIDs.v_input.value, "value"),
-    Input(ElementsIDs.v_input.value, "value"),
-    State(ElementsIDs.v_input.value, "data"),
-)
-def update_adaptive_en_air_speed_options(input_value, _):
-    return [speed.value for speed in AdaptiveENSpeeds], input_value

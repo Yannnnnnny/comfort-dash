@@ -27,6 +27,7 @@ class ElementsIDs(Enum):
     charts_dropdown = "id-charts-dropdown"
     CHART_CONTAINER = "id-chart-container"
     URL = "url"
+    INITIAL_URL = "initial-url"
     FOOTER = "id-footer"
     INPUT_SECTION = "id-input-section"
     inputs_form = "id-inputs-form"
@@ -163,6 +164,11 @@ class Charts(Enum):
         id="id_set_outputs_chart",
         note_chart="This chart shows how some variables, calculated using the SET model, vary as a function of the input parameters you selected. You can toggle on and off the lines by clicking on the relative variable in the legend.",
     )
+    adaptive_chart: ChartsInfo = ChartsInfo(
+        name="Adaptive chart",
+        id="id_adaptive_chart",
+        note_chart="Method is applicable only for occupant-controlled naturally conditioned spaces that meet all of the following criteria: (a) There is no mechanical cooling system installed. No heating system is in operation; (b) Metabolic rates ranging from 1.0 to 1.3 met; and (c) Occupants are free to adapt their clothing to the indoor and/or outdoor thermal conditions within a range at least as wide as 0.5-1.0 clo.",
+    )
 
 
 class AdaptiveAshraeSpeeds(Enum):
@@ -173,7 +179,7 @@ class AdaptiveAshraeSpeeds(Enum):
 
 
 class AdaptiveENSpeeds(Enum):
-    lower_than_06: str = "lower than 0.6 m/s (118fpm)"
+    speed_01: str = "0.1 m/s (118fpm)"
     speed_06: str = "0.6 m/s (118fpm)"
     speed_09: str = "0.9 m/s (177fpm)"
     speed_12: str = "1.2 m/s (236fpm)"
@@ -446,6 +452,7 @@ class Models(Enum):
         charts=[
             # todo add the right charts
             Charts.psychrometric.value,
+            Charts.psychrometric_operative.value,
             Charts.t_rh.value,
         ],
         inputs=[
@@ -510,7 +517,8 @@ class Models(Enum):
         description="Adaptive - ASHRAE 55",
         charts=[
             # todo add the right charts
-            Charts.t_rh.value,
+            # Charts.t_rh.value, # the name is wrong
+            Charts.adaptive_chart.value,
         ],
         inputs=[
             ModelInputsInfo(
