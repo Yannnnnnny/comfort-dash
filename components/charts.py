@@ -1248,28 +1248,44 @@ def t_rh_pmv(
             mode="markers",
             marker=dict(color="red", size=8),
             name="Current Input",
-            # hoverinfo="skip",
+            hoverinfo="skip",
         )
     )
     # Add hover area to allow hover interaction
 
-    x_range = np.linspace(10, 40, 100)
+    x_range_blue = np.linspace(t2["temp"].min(), t2["temp"].max(), 100)
+    y_range_blue = np.linspace(t2["rh"].min(), t2["rh"].max(), 100)
 
-    if units == UnitSystem.IP.value:  # The X-axis range of gridlines in the IP state
-        x_range = np.linspace(50, 100, 100)
+    xx_blue, yy_blue = np.meshgrid(x_range_blue, y_range_blue)
 
-    y_range = np.linspace(0, 100, 100)
-    xx, yy = np.meshgrid(x_range, y_range)
     fig.add_trace(
         go.Scatter(
-            x=xx.flatten(),
-            y=yy.flatten(),
+            x=xx_blue.flatten(),
+            y=yy_blue.flatten(),
             mode="markers",
             marker=dict(color="rgba(0,0,0,0)"),
             hoverinfo="x+y",
             name="Interactive Hover Area",
         )
     )
+
+    # x_range = np.linspace(10, 40, 100)
+    #
+    # if units == UnitSystem.IP.value:  # The X-axis range of gridlines in the IP state
+    #     x_range = np.linspace(50, 100, 100)
+    #
+    # y_range = np.linspace(0, 100, 100)
+    # xx, yy = np.meshgrid(x_range, y_range)
+    # fig.add_trace(
+    #     go.Scatter(
+    #         x=xx.flatten(),
+    #         y=yy.flatten(),
+    #         mode="markers",
+    #         marker=dict(color="rgba(0,0,0,0)"),
+    #         hoverinfo="x+y",
+    #         name="Interactive Hover Area",
+    #     )
+    # )
 
     if model == "ashrae" and function_selection == Functionalities.Compare.value:
         met_2, clo_2, tr_2, t_db_2, v_2, rh_2 = compare_get_inputs(inputs)

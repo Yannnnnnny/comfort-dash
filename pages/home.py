@@ -250,7 +250,6 @@ def update_hover_annotation(hover_data, figure, inputs):
 
     # import units
     units = inputs[ElementsIDs.UNIT_TOGGLE.value]
-
     if (
         hover_data
         and figure
