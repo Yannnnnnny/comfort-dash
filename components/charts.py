@@ -1667,6 +1667,7 @@ def speed_temp_pmv(
         )
     )
     fig.update_layout(
+        hovermode=False,
         xaxis_title=(
             "Operative Temperature [°C]"
             if units == UnitSystem.SI.value
