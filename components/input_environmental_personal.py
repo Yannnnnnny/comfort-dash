@@ -313,8 +313,7 @@ def input_environmental_personal(
     function_selection: str = Functionalities.Default.value,
     include_tr: bool = True,
     include_air_temp: bool = True,
-    is_operative_temperature: bool = False
-
+    is_operative_temperature: bool = False,
 ):
     inputs = []
     all_inputs = set()

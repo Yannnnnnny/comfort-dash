@@ -151,14 +151,33 @@ def update_inputs(selected_model, units_selection, function_selection, chart_sel
         return no_update
     units = UnitSystem.IP.value if units_selection else UnitSystem.SI.value
     if chart_selected == Charts.wind_temp_chart.value.name:
-        return input_environmental_personal(selected_model, units, function_selection, include_tr=False,
-                                            is_operative_temperature=True)
-    elif chart_selected in [Charts.set_outputs.value.name, Charts.thl_psychrometric.value.name]:
-        return input_environmental_personal(selected_model, units, function_selection, include_tr=True,
-                                            include_air_temp=False)
+        return input_environmental_personal(
+            selected_model,
+            units,
+            function_selection,
+            include_tr=False,
+            is_operative_temperature=True,
+        )
+    elif chart_selected in [
+        Charts.set_outputs.value.name,
+        Charts.thl_psychrometric.value.name,
+    ]:
+        return input_environmental_personal(
+            selected_model,
+            units,
+            function_selection,
+            include_tr=True,
+            include_air_temp=False,
+        )
     else:
-        return input_environmental_personal(selected_model, units, function_selection, include_tr=True,
-                                            include_air_temp=True, is_operative_temperature=False)
+        return input_environmental_personal(
+            selected_model,
+            units,
+            function_selection,
+            include_tr=True,
+            include_air_temp=True,
+            is_operative_temperature=False,
+        )
 
 
 # once function: update_inputs via URL, update the value of the model dropdown, unit toggle and functionality dropdown and chart dropdown, and inputs, it only use once when the page is loaded
