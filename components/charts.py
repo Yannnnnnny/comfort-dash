@@ -141,7 +141,6 @@ def adaptive_chart(
                 hoverinfo="skip",
             )
         )
-
     x = inputs[ElementsIDs.t_rm_input.value]
     y = t_o(
         tdb=inputs[ElementsIDs.t_db_input.value],
