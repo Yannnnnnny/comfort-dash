@@ -630,6 +630,16 @@ def t_rh_pmv(
             f"t<sub>dp</sub>: {psy_results.t_dp:.1f} °C<br>"
             f"h: {psy_results.h / 1000:.1f} kJ/kg"
         )
+        fig.add_shape(
+            type="rect",
+            x0=29.5,
+            x1=34.2,
+            y0=72,
+            y1=99,
+            fillcolor="rgba(255, 255, 255, 0.6)",
+            line_color="rgba(0, 0, 0, 0)",
+            layer="above",
+        )
         annotation_x = 32  # x coordinates in SI units
         annotation_y = 86  # Y-coordinate of relative humidity
     elif units == UnitSystem.IP.value:
@@ -665,13 +675,18 @@ def t_rh_pmv(
             text=annotation_text,
             showarrow=False,
             align="left",
-            bgcolor="white",
+            bgcolor="rgba(0,0,0,0)",
             bordercolor="rgba(0,0,0,0)",
             font=dict(size=14),
         )
 
     fig.update_layout(
-        yaxis=dict(title="Relative Humidity [%]", range=[0, 100], dtick=10),
+        yaxis=dict(
+            title="Relative Humidity [%]",
+            range=[0, 100],
+            dtick=10,
+            layer="below traces",
+        ),
         xaxis=dict(
             title=(
                 "Dry-bulb Temperature (°C)"
@@ -680,6 +695,7 @@ def t_rh_pmv(
             ),
             range=[10, 36] if units == UnitSystem.SI.value else [50, 100],
             dtick=2 if units == UnitSystem.SI.value else 5,
+            layer="below traces",
         ),
         showlegend=False,
         plot_bgcolor="white",
